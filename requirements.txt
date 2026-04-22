@@ -5,4 +5,6 @@ pandas
 geopandas
 matplotlib
 imageio
+numpy
 jupyter
+numpy
