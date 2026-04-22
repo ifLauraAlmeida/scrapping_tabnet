@@ -1,4 +1,5 @@
 import imageio.v3 as iio
+import numpy as np
 import os
 from log import logger
 
@@ -54,27 +55,37 @@ def criar_gif_acumulado(
 
         # 2. Carregar as imagens garantindo que todas tenham o mesmo 'shape' (tamanho)
         imagens = []
-        shape_referencia = None
+        shapes = []
 
         for nome_arquivo in arquivos:
             caminho_completo = os.path.join(pasta_origem, nome_arquivo)
             img = iio.imread(caminho_completo)
+            imagens.append((nome_arquivo, img))
+            shapes.append(img.shape)
 
-            # Definir o tamanho da primeira imagem como padrão
-            if shape_referencia is None:
-                shape_referencia = img.shape
+        target_shape = tuple(np.min(shapes, axis=0))
+        if any(shape != target_shape for shape in shapes):
+            logger.warning(f"Normalizando frames para o shape comum {target_shape}.")
 
-            # Pular imagens que por erro de plotagem tenham tamanho diferente
-            if img.shape == shape_referencia:
-                imagens.append(img)
-            else:
+        imagens_normalizadas = []
+        for nome_arquivo, img in imagens:
+            original_shape = img.shape
+            if original_shape != target_shape:
+                img = img[: target_shape[0], : target_shape[1], ...]
                 logger.warning(
-                    f"Ignorando {nome_arquivo} por diferença de tamanho ({img.shape} vs {shape_referencia})"
+                    f"Cortando {nome_arquivo} de {original_shape} para {target_shape}."
                 )
+            imagens_normalizadas.append(img)
+
+        if not imagens_normalizadas:
+            logger.error(
+                "Nenhuma imagem compatível foi carregada. Verifique os arquivos PNG e os tamanhos dos frames."
+            )
+            return
 
         # 3. Salvar o GIF
         # fps=12 é uma boa velocidade para 18 anos de dados (cerca de 18 segundos de vídeo)
-        iio.imwrite(nome_saida, imagens, fps=fps, loop=0)
+        iio.imwrite(nome_saida, imagens_normalizadas, fps=fps, loop=0)
 
         logger.info(f"--- SUCESSO! GIF salvo como: {nome_saida} ---")
 

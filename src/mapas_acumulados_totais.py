@@ -174,7 +174,8 @@ def gerar_serie_acumulada_historica(csv_path):
             ax.set_axis_off()
 
             nome_arq = f"{PASTA}/heatmap_{ano}_{mes_num}_{mes_nome}.png"
-            plt.savefig(nome_arq, bbox_inches="tight")
+            plt.tight_layout()
+            plt.savefig(nome_arq, dpi=100, facecolor="white")
             plt.close(fig)
 
             if (i + 1) % 24 == 0:
