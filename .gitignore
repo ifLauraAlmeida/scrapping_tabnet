@@ -159,6 +159,11 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# Project specific
+logs/
+data/visualizations/
+*.log
+
 # Pyre type checker
 .pyre/
 
@@ -205,3 +210,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+.parquet
+.csv
+.png
