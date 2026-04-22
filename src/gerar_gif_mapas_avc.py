@@ -1,4 +1,5 @@
 import imageio.v3 as iio
+import numpy as np
 import os
 from log import logger
 
@@ -8,7 +9,7 @@ project_root = os.path.dirname(os.path.dirname(__file__))
 
 
 def criar_gif_da_serie(
-    pasta_origem=os.path.join(project_root, "data", "mapas_acumulados_totais"),
+    pasta_origem=os.path.join(project_root, "data", "mapas_avc"),
     nome_saida=os.path.join(
         project_root, "data", "visualizations", "evolucao_avc_rj.gif"
     ),
@@ -52,14 +53,37 @@ def criar_gif_da_serie(
 
         # 2. Lê as imagens e armazena em uma lista
         imagens = []
+        shapes = []
         for nome_arquivo in arquivos:
             caminho_completo = os.path.join(pasta_origem, nome_arquivo)
-            imagens.append(iio.imread(caminho_completo))
+            img = iio.imread(caminho_completo)
+            imagens.append((nome_arquivo, img))
+            shapes.append(img.shape)
+
+        target_shape = tuple(np.min(shapes, axis=0))
+        if any(shape != target_shape for shape in shapes):
+            logger.warning(f"Normalizando frames para o shape comum {target_shape}.")
+
+        imagens_normalizadas = []
+        for nome_arquivo, img in imagens:
+            original_shape = img.shape
+            if original_shape != target_shape:
+                img = img[: target_shape[0], : target_shape[1], ...]
+                logger.warning(
+                    f"Cortando {nome_arquivo} de {original_shape} para {target_shape}."
+                )
+            imagens_normalizadas.append(img)
+
+        if not imagens_normalizadas:
+            logger.error(
+                "Nenhuma imagem compatível foi carregada. Verifique os arquivos PNG e os tamanhos dos frames."
+            )
+            return
 
         # 3. Salva como GIF
         # fps: quadros por segundo. Aumente para ficar mais rápido.
         # loop=0: o GIF vai ficar repetindo infinitamente.
-        iio.imwrite(nome_saida, imagens, fps=fps, loop=0)
+        iio.imwrite(nome_saida, imagens_normalizadas, fps=fps, loop=0)
 
         logger.info(f"Sucesso! GIF salvo como: {nome_saida}")
 
